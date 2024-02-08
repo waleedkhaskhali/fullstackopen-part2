@@ -1,33 +1,58 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
+import personService from "./services/persons";
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: "Arto besto", number: "23423425", id: 1 },
-    { name: "Ricardo jacker", number: "23423456", id: 2 },
-    { name: "Diego pop", number: "65445656", id: 3 },
-    { name: "Luis lorn", number: "67576578", id: 4 },
-  ]);
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredNames, setFilteredNames] = useState(persons);
 
-  const handleSubmit = () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    let randomId = Math.random() * 10;
+    Math.floor(randomId);
     if (persons.some((el) => el.name === newName)) {
       alert(`${newName} is already added to phonebook.`);
     } else {
-      setPersons([...persons, { name: newName, number: newNumber, id: 200 }]);
+      setPersons([...persons, { name: newName, number: newNumber }]);
+      await personService
+        .create({
+          name: newName,
+          number: newNumber,
+          id: randomId.toString(),
+        })
+        .then((promise) => {
+          console.log(promise);
+        });
       console.log(persons);
     }
   };
 
   useEffect(() => {
+    personService.getAll().then((response) => {
+      setPersons(response);
+      console.log(response);
+      console.log(persons);
+    });
+  }, []);
+
+  console.log(persons);
+
+  useEffect(() => {
     const filteredItems = persons.filter((name) =>
       name.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
+    if (searchTerm === "") {
+      setFilteredNames([]);
+    }
     setFilteredNames(filteredItems);
   }, [searchTerm]);
+
+  const deletePerson = async (id) => {
+    await personService.remove(id);
+  };
 
   return (
     <div>
@@ -43,7 +68,7 @@ const App = () => {
           number: <input onChange={(e) => setNewNumber(e.target.value)} />
         </div>
         <div>
-          <button type="button" onClick={() => handleSubmit()}>
+          <button type="submit" onClick={(e) => handleSubmit(e)}>
             add
           </button>
         </div>
@@ -55,6 +80,13 @@ const App = () => {
             <div key={id}>
               <h3>{person.name}</h3>
               {person.number}
+              <button
+                onClick={() => {
+                  deletePerson(person.id);
+                }}
+              >
+                remove
+              </button>
             </div>
           ))}
     </div>
